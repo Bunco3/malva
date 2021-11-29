@@ -45,8 +45,8 @@ static const char *USAGE_MESSAGE =
   "      -p, --strip-chr                   strip \"chr\" from sequence names (default:false)\n"
   "      -u, --uniform                     use uniform a priori probabilities (default:false)\n"
   "      -v, --verbose                     output COVS and GTS in INFO column (default: false)\n"
-  "      -1, --haploid                     run MALVA in haploid mode (default: false)\n"
-  // "      -t, --threads                     number of threads (default: 1)\n"
+  "      -1, --haploid                     run MALVA in haploid mode (default: 0)\n"
+   "      -t, --testmode                   run MALVA in test mode, -t <SAMPLE path>\n"
   "\n";
 
 namespace opt {
@@ -61,13 +61,14 @@ static bool strip_chr = false;
 static bool uniform = false;
 static bool verbose = false;
 static bool haploid = false;
-// static size_t nThreads = 1;
+static bool testmode = false;
 static string fasta_path;
 static string vcf_path;
 static string kmc_sample_path;
+static string sample_path; //path sample
 }
 
-static const char *shortopts = "k:r:e:s:f:c:b:hpuv1";
+static const char *shortopts = "k:r:e:s:f:c:b:t:hpuv1";
 
 static const struct option longopts[] = {
     {"kmer-size", required_argument, NULL, 'k'},
@@ -79,9 +80,9 @@ static const struct option longopts[] = {
     {"bf-size", required_argument, NULL, 'b'},
     {"strip-chr", required_argument, NULL, 'p'},
     {"uniform", required_argument, NULL, 'u'},
+    {"testmode", required_argument, NULL, 't'},
     {"verbose", no_argument, NULL, 'v'},
     {"haplod", no_argument, NULL, '1'},
-    // {"threads", no_argument, NULL, 't'},
     {"help", no_argument, NULL, 'h'},
     {NULL, 0, NULL, 0}};
 
@@ -126,9 +127,10 @@ void parse_arguments(int argc, char **argv) {
     case '1':
       opt::haploid = true;
       break;
-    // case 't':
-    //   arg >> opt::nThreads;
-    //   break;
+    case 't':
+      opt::testmode = true;
+      arg >> opt::sample_path;
+      break;
     case '?':
       die = true;
       break;
@@ -137,7 +139,8 @@ void parse_arguments(int argc, char **argv) {
       exit(EXIT_SUCCESS);
     }
   }
-
+  
+  //increase +1 argumets if testmode on
   if (argc - optind < 3) {
     cerr << "malva : missing arguments\n";
     die = true;
@@ -153,6 +156,7 @@ void parse_arguments(int argc, char **argv) {
   opt::fasta_path = argv[optind++];
   opt::vcf_path = argv[optind++];
   opt::kmc_sample_path = argv[optind++];
+  
 }
 
 #endif
