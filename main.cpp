@@ -49,8 +49,10 @@ auto start_t = chrono::high_resolution_clock::now();
 
 void pelapsed(const string &s = "", const bool rollback = false) {
   auto now_t = chrono::high_resolution_clock::now();
-  cerr << "[malva-geno/" << s << "] Time elapsed "
-	    << chrono::duration_cast<chrono::milliseconds>(now_t - start_t).count()/1000 << "s";
+ 
+  chrono::duration<double> diff = now_t - start_t;
+  cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(3) << diff.count() << "s";
+  
   if(rollback) cerr << "\r";
   else cerr << endl;
 }
