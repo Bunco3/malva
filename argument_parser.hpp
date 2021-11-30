@@ -140,7 +140,6 @@ void parse_arguments(int argc, char **argv) {
     }
   }
   
-  //increase +1 argumets if testmode on
   if (argc - optind < 3) {
     cerr << "malva : missing arguments\n";
     die = true;

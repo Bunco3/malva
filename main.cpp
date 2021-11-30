@@ -46,15 +46,26 @@
 using namespace std;
 
 auto start_t = chrono::high_resolution_clock::now();
+auto now_t = chrono::high_resolution_clock::now();
+
+auto *last_t = &start_t; //time_point
 
 void pelapsed(const string &s = "", const bool rollback = false) {
-  auto now_t = chrono::high_resolution_clock::now();
+  chrono::duration<double> old_now_t =  chrono::high_resolution_clock::now() - *last_t;
+  
+  cerr << "[malva-geno/" << s << "] Execution Time " << setprecision(3) << old_now_t.count() << "s" << endl;
+  
+  now_t = chrono::high_resolution_clock::now();
  
   chrono::duration<double> diff = now_t - start_t;
-  cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(3) << diff.count() << "s";
+  
+  last_t = &now_t;
+  
+  cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(3) << diff.count() << "s" << endl;
   
   if(rollback) cerr << "\r";
   else cerr << endl;
+  
 }
 
 KSEQ_INIT(gzFile, gzread)
