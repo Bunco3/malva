@@ -42,6 +42,7 @@
 #include "bloom_filter.hpp"
 #include "var_block.hpp"
 #include "kmap.hpp"
+#include "malva_test.hpp"
 
 using namespace std;
 
@@ -147,8 +148,13 @@ void print_cleaned_header(bcf_hdr_t *vcf_header, const bool verbose) {
   // Adding donor sample and removing all other samples
   const char *new_sample = "DONOR";
   bcf_hdr_add_sample(vcf_header, new_sample);
-  bcf_hdr_sync(vcf_header);
-  bcf_hdr_set_samples(vcf_header, new_sample, 0);
+  
+  //FIXED WARNING UNUSED INT
+  int w1 = bcf_hdr_sync(vcf_header);
+  int w2 = bcf_hdr_set_samples(vcf_header, new_sample, 0);
+  if(w1 == -1 && w2 == -1){
+    pelapsed("ADD DONOR SAMPLE ERROR.");
+  }
 
   // Formatting and printing header
   kstring_t htxt = {0, 0, 0};
@@ -402,6 +408,12 @@ int main(int argc, char *argv[]) {
   cout.flush();
 
   pelapsed("Execution completed");
+  
+  //test fase 4
+  if(opt::testmode){
+      //confronta genotypes.vcf con sample.vcf
+      //compare_genotypes(opt::sample_path, opt::kmc_sample_path);
+  }
 
   return 0;
 }
