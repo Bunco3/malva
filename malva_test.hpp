@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <string.h>
 #include "vcf.h"
 
 void usage(const string name) {
@@ -68,21 +69,22 @@ int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
             throw std::runtime_error("Unable to read genotype header.");
         }
     
-    std::cout << "chromosome\tposition\tnum_alleles" << std::endl;
+    //CONTROLLO DELLA LUNGHEZZA??
+    //DA IMPLEMENTARE
     
     //CYCLE READ SAMPLE
     while(bcf_read(sample_bcf, sample_header, sample_record) == 0) {
-        //COMPARE NAME
-        if(bcf_hdr_id2name(sample_header, sample_record->rid) != bcf_hdr_id2name(geno_header, geno_record->rid) ){
+        //COMPARE NAME (array di caratteri char*)
+        if(strcmp(bcf_hdr_id2name(sample_header, sample_record->rid), bcf_hdr_id2name(geno_header, geno_record->rid)) != 0){
             return 1;
         }
         
-        //COMPARE RECORD
+        //COMPARE RECORD (int64_t)
         if( sample_record->pos != geno_record->pos){
             return 1;
         }
         
-        //COMPARE ALLELE
+        //COMPARE ALLELE (uint32_t)
         if(sample_record->n_allele != geno_record->n_allele){
             return 1;
         }
