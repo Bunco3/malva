@@ -64,6 +64,11 @@ void pelapsed(const string &s = "", const bool rollback = false) {
   
   cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(3) << diff.count() << "s" << endl;
   
+  //TRACK MEMORY USAGE
+  if(opt::testmode){ //if -t on
+      cerr << "[malva-geno/" << s << "] Maximum memory used " << get_mem_usage()/1024 << "Mb" << endl;
+  }
+  
   if(rollback) cerr << "\r";
   else cerr << endl;
   

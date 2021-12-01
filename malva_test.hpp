@@ -25,7 +25,20 @@
 #include <iostream>
 #include <stdexcept>
 #include <string.h>
+#include <sys/resource.h>
 #include "vcf.h"
+
+
+/*
+ Returns the peak (maximum so far) resident set size (physical memory use) measured in Megabytes.
+ */
+long get_mem_usage(){
+    struct rusage myusage;
+    
+    getrusage(RUSAGE_SELF, &myusage);
+    //Return the maximum resident set size used (in kilobytes).
+    return myusage.ru_maxrss;
+}
 
 void usage(const string name) {
     std::cerr << "Usage: " << name << std::endl;
