@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 #include "vcf.h"
 
 /*
@@ -37,6 +38,19 @@ long get_mem_usage(){
     getrusage(RUSAGE_SELF, &myusage);
     //Return the maximum resident set size used (in kilobytes).
     return myusage.ru_maxrss;
+}
+
+/*
+ This is the total amount of time spent executing in user mode, expressed in a timeval structure. 
+ */
+double get_cpu_time(){
+    struct rusage myusage;
+    getrusage(RUSAGE_SELF, &myusage);
+    
+    long seconds = myusage.ru_stime.tv_sec;
+    long microseconds = myusage.ru_stime.tv_usec;
+    double time = seconds + (microseconds*1e-6);
+    return time;
 }
 
 void usage(const string name) {

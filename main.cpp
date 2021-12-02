@@ -46,10 +46,12 @@
 
 using namespace std;
 
+//variables used for time execution and elapsed
 auto start_t = chrono::high_resolution_clock::now();
 auto now_t = chrono::high_resolution_clock::now();
-
 auto *last_t = &start_t; //time_point
+//variable used for cpu-time elapsed
+double cpu_start = get_cpu_time();
 
 void pelapsed(const string &s = "", const bool rollback = false) {
   chrono::duration<double> old_now_t =  chrono::high_resolution_clock::now() - *last_t;
@@ -64,8 +66,11 @@ void pelapsed(const string &s = "", const bool rollback = false) {
   
   cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(3) << diff.count() << "s" << endl;
   
-  //TRACK MEMORY USAGE
   if(opt::testmode){ //if -t on
+      //PRINT CPU TIME ELAPSED
+      cerr << "[malva-geno/" << s << "] Used CPU-time elapsed " << get_cpu_time() - cpu_start << "s" << endl;
+      
+      //PRINT MAX MEMORY USAGE
       cerr << "[malva-geno/" << s << "] Maximum memory used " << get_mem_usage()/1024 << "Mb" << endl;
   }
   
