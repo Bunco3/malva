@@ -101,8 +101,8 @@ int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
         * 3. every compared record: rec_sa++
         * 4. every succes match: match++
         ***/
+        rec_sa++;
         while(bcf_read(geno_bcf, geno_header, geno_record) == 0) {
-            rec_sa++;
             //COMPARE CHROM (int64_t)
             if(sample_record->rid == geno_record->rid){
                 //COMPARE POS (int64_t)
