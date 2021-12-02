@@ -28,7 +28,6 @@
 #include <sys/resource.h>
 #include "vcf.h"
 
-
 /*
  Returns the peak (maximum so far) resident set size (physical memory use) measured in Megabytes.
  */
@@ -44,9 +43,13 @@ void usage(const string name) {
     std::cerr << "Usage: " << name << std::endl;
 }
 
+
+/* INPUT -> TWO FILEs VCF
+   OUTPUT -> % Precision VCFs
+ */
 int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
     
-    //stampa file usati
+    //PRINT USED FILEs
     usage(sample_vcf);
     usage(geno_vcf);
     
@@ -82,24 +85,34 @@ int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
             throw std::runtime_error("Unable to read genotype header.");
         }
     
-    //CONTROLLO DELLA LUNGHEZZA??
-    //DA IMPLEMENTARE
+    int rec_sa = 0; //number of sample records 
+    int match = 0; //same record match
     
-    //CYCLE READ SAMPLE
+    /***
+        * 1. read sample_RECORD
+        * 2. check sample_RECORD are covered in             the geno_RECORD
+        * 3. if covered match++
+        * 4. output the precision of covered
+    ***/
     while(bcf_read(sample_bcf, sample_header, sample_record) == 0) {
-        //COMPARE NAME (array di caratteri char*)
-        if(strcmp(bcf_hdr_id2name(sample_header, sample_record->rid), bcf_hdr_id2name(geno_header, geno_record->rid)) != 0){
-            return 1;
-        }
-        
-        //COMPARE RECORD (int64_t)
-        if( sample_record->pos != geno_record->pos){
-            return 1;
-        }
-        
-        //COMPARE ALLELE (uint32_t)
-        if(sample_record->n_allele != geno_record->n_allele){
-            return 1;
+        /***
+        * 1. extract sample_RECORD (SR)
+        * 2. search SR in GENO
+        * 3. every compared record: rec_sa++
+        * 4. every succes match: match++
+        ***/
+        while(bcf_read(geno_bcf, geno_header, geno_record) == 0) {
+            rec_sa++;
+            //COMPARE CHROM (int64_t)
+            if(sample_record->rid == geno_record->rid){
+                //COMPARE POS (int64_t)
+                if(sample_record->pos == geno_record->pos){
+                    //COMPARE length of REF (int64_t)
+                    if(sample_record->rlen == geno_record->rlen){
+                        match++;
+                    }
+                }
+            }
         }
     }
     
@@ -107,12 +120,15 @@ int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
     bcf_hdr_destroy(sample_header);
     bcf_destroy(sample_record); 
     bcf_close(sample_bcf);
-        //SAMPLE DESTROY
+        //GENO DESTROY
         bcf_hdr_destroy(geno_header);
         bcf_destroy(geno_record); 
         bcf_close(geno_bcf);
     
-    return 0;//IF SAME
+    if(rec_sa == 0){//sample record empty
+        return 0;
+    }
+    return (match/rec_sa)*100; //% precision match
 }
 
 
