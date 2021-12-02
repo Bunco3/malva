@@ -110,6 +110,7 @@ int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
                     //COMPARE length of REF (int64_t)
                     if(sample_record->rlen == geno_record->rlen){
                         match++;
+                        break;
                     }
                 }
             }
