@@ -419,10 +419,10 @@ int main(int argc, char *argv[]) {
 
   pelapsed("Execution completed");
   
-  //test fase 4
+  //COMPARE VFC
   if(opt::testmode){
-      //confronta genotypes.vcf con sample.vcf
-      //compare_genotypes(opt::sample_path, opt::kmc_sample_path);
+      string geno = "chr20.genotyped.vcf";
+    compare_genotypes(opt::sample_path.c_str(), geno.c_str());
   }
 
   return 0;

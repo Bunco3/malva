@@ -29,6 +29,20 @@
 #include <sys/time.h>
 #include "vcf.h"
 
+const int DEBUG = 0; //=1 FOR DEBUG PRINTs
+
+typedef struct {
+    htsFile *bcf;
+    bcf_hdr_t *header;
+    bcf1_t *record;
+} VCFt;
+
+long get_mem_usage();
+double get_cpu_time();
+
+void compare_genotypes(const char* sample_vcf, const char* geno_vcf);
+VCFt read_vcf(const char* vcf);
+
 /*
  Returns the peak (maximum so far) resident set size (physical memory use) measured in Megabytes.
  */
@@ -42,73 +56,42 @@ long get_mem_usage(){
 
 /*
  This is the total amount of time spent executing in user mode, expressed in a timeval structure. 
+ struct timeval {
+    time_t      tv_sec;     // seconds
+    suseconds_t tv_usec;    // microseconds }; 
  */
 double get_cpu_time(){
     struct rusage myusage;
     getrusage(RUSAGE_SELF, &myusage);
-    
+
     long seconds = myusage.ru_stime.tv_sec;
     long microseconds = myusage.ru_stime.tv_usec;
+    
     double time = seconds + (microseconds*1e-6);
     return time;
 }
 
-void usage(const string name) {
-    std::cerr << "Usage: " << name << std::endl;
-}
-
-
 /* INPUT -> TWO FILEs VCF
-   OUTPUT -> % Precision VCFs
+   OUTPUT -> Print of % Precision match
  */
-int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
+void compare_genotypes(const char* sample_vcf, const char* geno_vcf){
     
     //PRINT USED FILEs
-    usage(sample_vcf);
-    usage(geno_vcf);
+    std::cerr << "Compare \"" << sample_vcf << "\" with \"" << geno_vcf << "\"" << std::endl;
     
-    //SAMPLE INIT
-    htsFile *sample_bcf = NULL;
-    bcf_hdr_t *sample_header = NULL;
-    bcf1_t *sample_record = bcf_init();
+    //LOAD SAMPLE
+    VCFt sample = read_vcf(sample_vcf);
     
-        //GENO INIT
-        htsFile *geno_bcf = NULL;
-        bcf_hdr_t *geno_header = NULL;
-        bcf1_t *geno_record = bcf_init();
-    
-    //SAMPLE OPEN FILE
-    sample_bcf = bcf_open(sample_vcf, "r");
-    if(sample_bcf == NULL) {
-        throw std::runtime_error("Unable to open sample file.");
-    }
-        //GENO OPEN FILE
-        geno_bcf = bcf_open(geno_vcf, "r");
-        if(geno_bcf == NULL) {
-            throw std::runtime_error("Unable to open genotype file.");
-        }
-    
-    //SAMPLE HEALDER
-    sample_header = bcf_hdr_read(sample_bcf);
-    if(sample_header == NULL) {
-        throw std::runtime_error("Unable to read sample header.");
-    }
-        //GENO HEALDER
-        geno_header = bcf_hdr_read(geno_bcf);
-        if(geno_header == NULL) {
-            throw std::runtime_error("Unable to read genotype header.");
-        }
-    
-    int rec_sa = 0; //number of sample records 
-    int match = 0; //same record match
+    double rec_sa = 0; //number of sample records 
+    double match = 0; //records matched
     
     /***
         * 1. read sample_RECORD
-        * 2. check sample_RECORD are covered in             the geno_RECORD
+        * 2. check sample_RECORD are covered in the geno_RECORD
         * 3. if covered match++
         * 4. output the precision of covered
     ***/
-    while(bcf_read(sample_bcf, sample_header, sample_record) == 0) {
+    while(bcf_read(sample.bcf, sample.header, sample.record) == 0) {
         /***
         * 1. extract sample_RECORD (SR)
         * 2. search SR in GENO
@@ -116,36 +99,84 @@ int compare_genotypes(const char* sample_vcf, const char* geno_vcf){
         * 4. every succes match: match++
         ***/
         rec_sa++;
-        while(bcf_read(geno_bcf, geno_header, geno_record) == 0) {
+       
+        //LOAD GENO
+        VCFt geno = read_vcf(geno_vcf);
+        
+        while(bcf_read(geno.bcf, geno.header, geno.record) == 0) {
+            
+            //DEBUG, print all records comparation
+            if(DEBUG){
+                std::cerr << "Record sample #CHROM " << sample.record->rid+1 << ", #POS " << sample.record->pos+1 << ", LENGHT #REF " << sample.record->rlen << std::endl;
+                
+                std::cerr << "Record Geno #CHROM " << geno.record->rid+1 << ", #POS " << geno.record->pos+1 << ", LENGHT #REF " << geno.record->rlen << std::endl << std::endl;
+            }
+            
             //COMPARE CHROM (int64_t)
-            if(sample_record->rid == geno_record->rid){
+            if(sample.record->rid+1 == geno.record->rid+1){
                 //COMPARE POS (int64_t)
-                if(sample_record->pos == geno_record->pos){
+                if(sample.record->pos+1 == geno.record->pos+1){
                     //COMPARE length of REF (int64_t)
-                    if(sample_record->rlen == geno_record->rlen){
+                    if(sample.record->rlen == geno.record->rlen){
+                        //DEBUG
+                        if(DEBUG){
+                            std::cerr << "<< RECORD MATCH FOUND >>" << std::endl << std::endl;
+                        }
                         match++;
                         break;
                     }
                 }
             }
         }
+        //GENO DESTROY
+        bcf_hdr_destroy(geno.header);
+        bcf_destroy(geno.record); 
+        bcf_close(geno.bcf);
     }
     
     //SAMPLE DESTROY
-    bcf_hdr_destroy(sample_header);
-    bcf_destroy(sample_record); 
-    bcf_close(sample_bcf);
-        //GENO DESTROY
-        bcf_hdr_destroy(geno_header);
-        bcf_destroy(geno_record); 
-        bcf_close(geno_bcf);
-    
-    if(rec_sa == 0){//sample record empty
-        return 0;
+    bcf_hdr_destroy(sample.header);
+    bcf_destroy(sample.record); 
+    bcf_close(sample.bcf);
+        
+    //PRINT RESULTS
+    if(rec_sa == 0){//sample records empty
+        std::cerr << "SAMPLE RECORDs EMPTY!" << std::endl;
+    }else{
+        std::cerr << "Records Matched " << match << std::endl << "Records Processed " << rec_sa << std::endl;
+        std::cerr << "Value of Precision: " << 100*(match/rec_sa) << "%" << endl;
     }
-    return (match/rec_sa)*100; //% precision match
 }
 
-
+/* Initialize the vcf file and create a VCFf struct for easier reading.
+ * INPUT -> VCF file path
+   OUTPUT -> struct {bcf, header, record}
+ */
+VCFt read_vcf(const char* vcf){
+    
+    VCFt out = {NULL, NULL, NULL};
+        
+    //VCF INIT
+    htsFile *vcf_bcf = NULL;
+    //SAMPLE OPEN FILE
+    vcf_bcf = bcf_open(vcf, "r");
+    if(vcf_bcf == NULL) {
+        throw std::runtime_error("Unable to open vcf file.");
+    }
+    out.bcf = vcf_bcf;
+    
+    bcf_hdr_t *vcf_header = NULL;
+    //VCF HEALDER
+    vcf_header = bcf_hdr_read(vcf_bcf);
+    if(vcf_header == NULL) {
+        throw std::runtime_error("Unable to read vcf header.");
+    }
+    out.header = vcf_header;
+    
+    bcf1_t *vcf_record = bcf_init();
+    out.record = vcf_record;
+    
+    return out;
+}
 
 #endif
