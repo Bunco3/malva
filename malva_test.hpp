@@ -84,10 +84,12 @@ void compare_genotypes(const char* sample_vcf, const char* geno_vcf){
     
     double rec_sa = 0; //number of sample records 
     double match = 0; //records matched
+    int sample_1iter = 1, geno_1iter = 1;
     
     /***
         * 1. read sample_RECORD
         * 2. check sample_RECORD are covered in the geno_RECORD
+        * (same: #CHROM #POS #ID #REF)
         * 3. if covered match++
         * 4. output the precision of covered
     ***/
@@ -99,11 +101,27 @@ void compare_genotypes(const char* sample_vcf, const char* geno_vcf){
         * 4. every succes match: match++
         ***/
         rec_sa++;
-       
+        
+        //if first iteration unpack record
+        if(sample_1iter){
+            //unpack for read REF,ALT,INFO,etc 
+            bcf_unpack(sample.record, BCF_UN_STR);
+            bcf_unpack(sample.record, BCF_UN_INFO);
+            sample_1iter = 0;
+        }
+        
         //LOAD GENO
         VCFt geno = read_vcf(geno_vcf);
         
         while(bcf_read(geno.bcf, geno.header, geno.record) == 0) {
+            
+            //if first iteration unpack record
+            if(geno_1iter){
+                //unpack for read REF,ALT,INFO,etc 
+                bcf_unpack(geno.record, BCF_UN_STR);
+                bcf_unpack(geno.record, BCF_UN_INFO);
+                geno_1iter = 0;
+            }
             
             //DEBUG, print all records comparation
             if(DEBUG){
@@ -116,14 +134,17 @@ void compare_genotypes(const char* sample_vcf, const char* geno_vcf){
             if(sample.record->rid+1 == geno.record->rid+1){
                 //COMPARE POS (int64_t)
                 if(sample.record->pos+1 == geno.record->pos+1){
-                    //COMPARE length of REF (int64_t)
-                    if(sample.record->rlen == geno.record->rlen){
+                    //COMPARE #ID (char* str)
+                    if(strcmp(sample.record->d.id, geno.record->d.id) == 0){
+                        //COMPARE #REF (char* str)
+                        if(strcmp(sample.record->d.allele[0], geno.record->d.allele[0]) == 0){
                         //DEBUG
                         if(DEBUG){
                             std::cerr << "<< RECORD MATCH FOUND >>" << std::endl << std::endl;
                         }
                         match++;
                         break;
+                        }
                     }
                 }
             }
@@ -132,6 +153,7 @@ void compare_genotypes(const char* sample_vcf, const char* geno_vcf){
         bcf_hdr_destroy(geno.header);
         bcf_destroy(geno.record); 
         bcf_close(geno.bcf);
+        geno_1iter = 1;
     }
     
     //SAMPLE DESTROY
