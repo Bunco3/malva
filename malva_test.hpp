@@ -64,8 +64,8 @@ double get_cpu_time(){
     struct rusage myusage;
     getrusage(RUSAGE_SELF, &myusage);
 
-    long seconds = myusage.ru_stime.tv_sec;
-    long microseconds = myusage.ru_stime.tv_usec;
+    long seconds = myusage.ru_utime.tv_sec;
+    long microseconds = myusage.ru_utime.tv_usec;
     
     double time = seconds + (microseconds*1e-6);
     return time;
