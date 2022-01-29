@@ -90,7 +90,7 @@ void pelapsed(const string &s = "", const bool rollback = false) {
   //CALCULATE EXECUTION TIME
   chrono::duration<double> old_now_t =  chrono::high_resolution_clock::now() - *last_t;
   //PRINT EXECUTION TIME
-  cerr << "[malva-geno/" << s << "] Execution Time " << setprecision(3) << old_now_t.count() << "s" << endl;
+  cerr << "[malva-geno/" << s << "] Execution Time " << setprecision(4) << old_now_t.count() << "s" << endl;
   
   //CALCULATE DIFF FOR TIME ELAPSED
   now_t = chrono::high_resolution_clock::now();
@@ -98,7 +98,7 @@ void pelapsed(const string &s = "", const bool rollback = false) {
   //SAVE LAST PHASE TIME
   last_t = &now_t; //maybe redundant run it every time
   //PRINT TIME ELAPSED
-  cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(3) << diff.count() << "s" << endl;
+  cerr << "[malva-geno/" << s << "] Time elapsed " << setprecision(4) << diff.count() << "s" << endl;
   //PRINT CPU TIME ELAPSED
   cerr << "[malva-geno/" << s << "] Used CPU-time elapsed " << get_cpu_time() - cpu_start << "s" << endl;    
   //PRINT MAX MEMORY USAGE
