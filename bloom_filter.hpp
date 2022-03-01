@@ -27,7 +27,7 @@
 #include <cstring>
 #include <sdsl/bit_vectors.hpp>
 
-#include "xxhash.h"
+#include "MurmurHash3.hpp"
 #include "kmc_file.h"
 
 using namespace std;
@@ -63,14 +63,14 @@ private:
     if (strcmp(kmer, ckmer) < 0)
       memmove(ckmer, kmer, k);
   }
-
-  uint64_t _get_hash(const char *kmer) const
-  {
+    
+  uint64_t _get_hash(const char *kmer) const {
     uint k = strlen(kmer);
     char ckmer[k + 1];
     _canonical(kmer, ckmer, k);
-    uint64_t hashes = XXH3_64bits(ckmer, k);
-    return hashes;
+    array<uint64_t, 2> hashes;
+    MurmurHash3_x64_128(ckmer, k, 0, reinterpret_cast<void *>(&hashes));
+    return hashes[0];
   }
 
 public:
